@@ -3,6 +3,7 @@
  *
  *  Created on: 27 jul. 2015
  *      Author: Nico
+ * Interrupt functionality added by s2j.io (2018-12-13)
  */
 
 #ifndef CLSPCA9555_H_
@@ -29,6 +30,7 @@ enum {
 #define NXP_OUTPUT     2
 #define NXP_INVERT     4
 #define NXP_CONFIG     6
+#define NXP_INTERUPT   8
 
 class PCA9555 {
 public:
@@ -36,6 +38,13 @@ public:
     void pinMode(uint8_t pin, uint8_t IOMode );          // pinMode
     uint8_t digitalRead(uint8_t pin);                    // digitalRead
     void digitalWrite(uint8_t pin, uint8_t value );      // digitalWrite
+    void enableInterruptOnPin(uint8_t pin);              // Mask in pin for Interrupt
+    void disableInterruptOnPin(uint8_t pin);             // Mask out pin from Interrupt
+    void setInterruptCallback(void (*isr)()) __attribute__((always_inline)){
+        isrCallback = isr;
+    }                                                    // Sets the callback to call if Interrupt happens
+    void interruptCallback(void);                        // Callback to add to host interrupt.
+    uint16_t whatPinsInterrupted(void);                  // Details what pins where changed.
 
 private:
     //
@@ -43,6 +52,7 @@ private:
     //
     uint16_t I2CGetValue(uint8_t address, uint8_t reg);
     void I2CSetValue(uint8_t address, uint8_t reg, uint8_t value);
+    void (*isrCallback)();
 
     union {
         struct {
@@ -58,6 +68,10 @@ private:
         };
         uint16_t _valueRegister;
     };
+
+    uint16_t _intMask;
+    volatile uint16_t _intValue;
+    volatile uint16_t _intPins;
     uint8_t _address;                                    // address of port this class is supporting
     int _error;                                          // error code from I2C
 };

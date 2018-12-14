@@ -7,6 +7,7 @@
  * Class to enable pinMode(), digitalRead() and digitalWrite() functions on PCA9555 IO expanders
  *
  * Additional input received from Rob Tillaart (9-8-2015)
+ * Interrupt functionality added by s2j.io (2018-12-13)
  *
  * @par License info
  *
@@ -87,6 +88,58 @@ void PCA9555::pinMode(uint8_t pin, uint8_t IOMode) {
         I2CSetValue(_address, NXP_CONFIG + 1, _configurationRegister_high);
     }
 }
+
+/**
+ * @name enableInterrupt
+ * @param pin       pin number
+ * enables a change interrupt on supplied pin
+ */
+void PCA9555::enableInterruptOnPin(uint8_t pin) {
+    if (pin <= 15) {
+        _intMask = _intMask | (1 << pin);
+    }
+}
+
+/**
+ * @name disableInterrupt
+ * @param pin       pin number
+ * disables an interrupt on supplied pin
+ */
+void PCA9555::disableInterruptOnPin(uint8_t pin) {
+    if (pin <= 15) {
+        _intMask = _intMask & ~(1 << pin);
+    }
+}
+
+/**
+ * @name interruptCallback
+ * interrupt Callback to check the interupt masks and call the attached callback if valid. Used in the host attachinterrupt.
+ */
+void PCA9555::interruptCallback(void) {
+    uint16_t _inputData = 0;
+    uint16_t _iPins = 0;
+
+    _inputData  = I2CGetValue(_address, NXP_INPUT);
+    _inputData |= I2CGetValue(_address, NXP_INPUT + 1) << 8;
+
+    _iPins = (_inputData & _intMask) ^ _intValue;
+
+    if (_iPins) {
+        _intPins = _iPins;
+        _intValue= _inputData & _intMask;
+        isrCallback();
+    }
+}
+
+/**
+ * @name whatPinsInterrupted
+ * @return pins
+ * returns the pins that caused the last interrupt
+ */
+uint16_t PCA9555::whatPinsInterrupted(void) {
+    return _intPins;
+}
+
 /**
  * @name digitalRead Reads the high/low value of specified pin
  * @param pin
@@ -195,5 +248,3 @@ void PCA9555::I2CSetValue(uint8_t address, uint8_t reg, uint8_t value){
     Wire.write(value);                            // write config register low byte
     _error = Wire.endTransmission();
 }
-
-

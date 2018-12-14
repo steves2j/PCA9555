@@ -2,3 +2,8 @@ PCA9555	KEYWORD1
 pinMode	KEYWORD2
 digitalRead	KEYWORD2
 digitalRead	KEYWORD2
+enableInterruptOnPin KEYWORD2
+disableInterruptOnPin KEYWORD2
+setInterruptCallback KEYWORD2
+interruptCallback KEYWORD2
+whatPinsInterrupted KEYWORD2
